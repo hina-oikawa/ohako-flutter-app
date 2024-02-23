@@ -24,13 +24,33 @@ class SongDatabase {
   // データベース
   late Database _database;
 
+  // Future<Database> open() async {
+  //   // データベースを開く処理
+  //   _database = await openDatabase(
+  //     join(await getDatabasesPath(), _databaseName),
+  //     onCreate: (db, version) {
+  //       return db.execute(
+  //         'CREATE TABLE $_tableName(id INTEGER PRIMARY KEY, title TEXT, artist TEXT, singers TEXT)',
+  //       );
+  //     },
+  //     version: 1,
+  //   );
+  //   return _database;
+  // }
+
   Future<Database> open() async {
     // データベースを開く処理
     _database = await openDatabase(
       join(await getDatabasesPath(), _databaseName),
-      onCreate: (db, version) {
-        return db.execute(
-          'CREATE TABLE $_tableName(id INTEGER PRIMARY KEY, title TEXT, iconImagePath TEXT, artists TEXT)',
+      onCreate: (db, version) async {
+        // songsテーブルを作成
+        await db.execute(
+          'CREATE TABLE songs(id INTEGER PRIMARY KEY, title TEXT, artist TEXT, singer_id INTEGER, FOREIGN KEY(singer_id) REFERENCES singers(id))',
+        );
+
+        // singersテーブルを作成
+        await db.execute(
+          'CREATE TABLE singers(id INTEGER PRIMARY KEY, name TEXT)',
         );
       },
       version: 1,

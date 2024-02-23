@@ -1,6 +1,6 @@
 class Song {
   // 曲のID
-  final int id;
+  final int? id;
   // 曲名
   final String title;
   // アーティスト名
@@ -19,8 +19,8 @@ class Song {
     return {
       'id': id,
       'title': title,
-      'artists': artist,
-      'singers': singers,
+      'artist': artist,
+      'singers': singers.join(','), // 配列を文字列に変換して保存
     };
   }
 
@@ -29,7 +29,7 @@ class Song {
       id: map['id'],
       title: map['title'],
       artist: map['artist'],
-      singers: List<String>.from(map['singers']),
+      singers: map['singers'].split(','),
     );
   }
 

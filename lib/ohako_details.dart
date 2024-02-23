@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'main.dart';
+import 'package:ohako/model/song.dart';
+import 'package:ohako/data/song_database.dart';
 
 class OhakoDetailsScreen extends StatefulWidget {
-  final Song song;
+  final Song? song;
 
   OhakoDetailsScreen({required this.song});
 
@@ -11,38 +13,61 @@ class OhakoDetailsScreen extends StatefulWidget {
 }
 
 class _OhakoDetailsScreenState extends State<OhakoDetailsScreen> {
-  List<String> artists = [];
+
+  String _title = '';
+  String _artist = '';
+  final List<String> _singers = [];
 
   @override
   void initState() {
     super.initState();
-    artists.addAll(widget.song.singers);
+    _title = widget.song?.title ?? '';
+    _artist = widget.song?.artist ?? '';
+    _singers.addAll(widget.song?.singers ?? []);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.song.title),
+        title: Text(widget.song?.title ?? 'New Song'),
+        actions: [
+          IconButton(
+            onPressed: () {
+              _saveSong();
+            },
+            icon: const Icon(Icons.save),
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const TextField(
-            decoration: InputDecoration(labelText: '曲名'),
+          TextField(
+            decoration: const InputDecoration(labelText: '曲名'),
+            onChanged: (value) {
+              _title = value;
+            },
+          ),
+          const SizedBox(height: 20),
+          TextField(
+            decoration: const InputDecoration(labelText: 'アーティスト名'),
+            onChanged: (value) {
+              _artist = value;
+            },
           ),
           const SizedBox(height: 20),
           const Text('歌い手'),
           const SizedBox(height: 10),
           ListView.builder(
             shrinkWrap: true,
-            itemCount: artists.length,
+            itemCount: _singers.length,
             itemBuilder: (BuildContext context, int index) {
               return ListTile(
                 title: TextFormField(
-                  initialValue: artists[index],
+                  initialValue: _singers[index],
                   onChanged: (value) {
-                    artists[index] = value;
+                    _singers[index] = value;
                   },
                 ),
               );
@@ -52,7 +77,7 @@ class _OhakoDetailsScreenState extends State<OhakoDetailsScreen> {
           ElevatedButton(
             onPressed: () {
               setState(() {
-                artists.add('');
+                _singers.add('');
               });
             },
             child: const Text('歌い手を追加'),
@@ -60,5 +85,27 @@ class _OhakoDetailsScreenState extends State<OhakoDetailsScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _saveSong() async {
+
+    final Song newSong = Song(
+      id: null,
+      title: _title,
+      artist: _artist,
+      singers: _singers,
+    );
+
+    if (widget.song != null) {
+      // Update existing song
+      final updatedSong = widget.song!.copyWith(title: _title, artist: _artist, singers: _singers);
+      await SongDatabase.instance.updateSong(updatedSong);
+    } else {
+      // Insert new song
+      await SongDatabase.instance.insertSong(newSong);
+    }
+
+    // Navigate back
+    Navigator.pop(context, true);
   }
 }
