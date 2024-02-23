@@ -1,42 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:ohako/ohako_details.dart';
+import 'package:ohako/model/song.dart';
+import 'package:ohako/data/song_database.dart'; // SongDatabaseを含むファイルをインポート
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // SongDatabaseの初期化
+  await SongDatabase.instance.open();
   runApp(const MyApp());
 }
-
-class Song {
-  // 曲名
-  final String title;
-  // 歌い手名の配列
-  final List<String> singers;
-
-  Song({
-    required this.title,
-    required this.singers,
-  });
-}
-
-// 仮データを定義
-// 今後はローカルDBからデータを取得する処理に変更
-final List<Song> song = [
-  Song(
-    title: '曲名１',
-    singers: ['歌い手A', '歌い手B', '歌い手C', '歌い手D'],
-  ),
-  Song(
-    title: '曲名２',
-    singers: ['歌い手A', '歌い手B', '歌い手C'],
-  ),
-  Song(
-    title: '曲名３',
-    singers: ['歌い手B', '歌い手D'],
-  ),
-  Song(
-    title: '曲名４',
-    singers: ['歌い手A', '歌い手C'],
-  ),
-];
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
@@ -65,35 +37,48 @@ class _OhakoListState extends State<OhakoList> {
       appBar: AppBar(
         title: const Text('Ohako List'),
       ),
-      body: ListView.builder(
-        itemCount: song.length,
-        itemBuilder: (context, index) {
-          return Card(
-            child: ListTile(
-              leading: const Icon(
-                Icons.music_note,
-                size: 50, // アイコンのサイズを48に設定
-                color: Colors.blue, // アイコンの色を青に設定
-              ),
-              // 曲名
-              title: Text(song[index].title),
-              // 歌い手名 ※文字結合
-              subtitle: Text(song[index].singers.join(", ")),
-              onTap: () {
-                // ListTileをタップしたとき、十八番詳細画面に遷移する
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    // ここで十八番情報を渡す
-                    builder: (context) => OhakoDetailsScreen(song: song[index]),
-                  ),
+      body: FutureBuilder<List<Song>>(
+        future: SongDatabase.instance.getSongs(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return Center(child: Text('No songs found.'));
+          } else {
+            return ListView.builder(
+              itemCount: snapshot.data!.length,
+              itemBuilder: (context, index) {
+                Song song = snapshot.data![index];
+                return ListTile(
+                  title: Text(song.title),
+                  subtitle: Text(song.singers.join(', ')),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => OhakoDetailsScreen(song: song),
+                      ),
+                    );
+                  },
                 );
               },
-              isThreeLine: true,
-              // dense: true,
+            );
+          }
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          // フローティングアクションボタンが押されたときの処理
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => OhakoDetailsScreen(song: null), // 十八番詳細画面に遷移
             ),
           );
         },
+        child: Icon(Icons.add),
       ),
     );
   }
